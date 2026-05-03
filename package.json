@@ -9,18 +9,19 @@
     "build:server": "tsc -p server/tsconfig.json",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start:server": "node dist/server/index.js"
+    "start:server": "tsx server/index.ts",
+    "start:server:dist": "node dist/server/index.js"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "@types/qrcode": "^1.5.6",
-    "tsx": "^4.21.0",
     "typescript": "~6.0.2",
     "vite": "^8.0.10"
   },
   "dependencies": {
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "tsx": "^4.21.0"
   }
 }
