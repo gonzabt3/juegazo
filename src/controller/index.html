@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Controlador</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: #111;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 90%;
+      max-width: 360px;
+    }
+    #setup h1 { font-size: 1.4rem; }
+    #setup input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 1.3rem;
+      letter-spacing: 4px;
+      text-align: center;
+      text-transform: uppercase;
+      border: 2px solid #555;
+      border-radius: 8px;
+      background: #222;
+      color: #fff;
+      outline: none;
+    }
+    .player-select { display: flex; gap: 12px; }
+    .player-btn {
+      flex: 1;
+      padding: 14px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    #btnP1 { background: #e74c3c; color: #fff; }
+    #btnP2 { background: #3498db; color: #fff; }
+    #btnJoin { background: #27ae60; color: #fff; width: 100%; padding: 14px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; }
+    #status { font-size: 0.9rem; color: #aaa; }
+
+    #controller {
+      display: none;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: 100%;
+      padding: 20px 16px;
+    }
+
+    /* D-PAD */
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(3, 64px);
+      gap: 4px;
+    }
+    .dpad-btn {
+      background: #333;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dpad-btn:active, .dpad-btn.pressed { background: #555; }
+    .dpad-empty { background: transparent; }
+
+    /* ACTION BUTTONS */
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 68px);
+      grid-template-rows: repeat(2, 68px);
+      gap: 8px;
+    }
+    .action-btn {
+      background: #444;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .action-btn:active, .action-btn.pressed { opacity: 0.7; }
+    #btnAttack  { background: #e74c3c; }
+    #btnKick    { background: #9b59b6; }
+    #btnBlock   { background: #2980b9; }
+    #btnFireball{ background: #e67e22; }
+  </style>
+</head>
+<body>
+  <div id="setup">
+    <h1>🎮 Controlador</h1>
+    <input id="roomInput" type="text" maxlength="6" placeholder="CÓDIGO DE SALA" />
+    <div class="player-select">
+      <button class="player-btn" id="btnP1">P1</button>
+      <button class="player-btn" id="btnP2">P2</button>
+    </div>
+    <button id="btnJoin">Entrar</button>
+    <p id="status">Ingresá el código que muestra el juego</p>
+  </div>
+
+  <div id="controller">
+    <div class="dpad">
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" id="dUp">▲</button>
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" id="dLeft">◀</button>
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" id="dRight">▶</button>
+      <div class="dpad-empty"></div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-empty"></div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn" id="btnAttack">PUNCH</button>
+      <button class="action-btn" id="btnKick">KICK</button>
+      <button class="action-btn" id="btnBlock">BLOCK</button>
+      <button class="action-btn" id="btnFireball">FIREBALL</button>
+    </div>
+  </div>
+
+  <script type="module" src="./controller.ts"></script>
+</body>
+</html>

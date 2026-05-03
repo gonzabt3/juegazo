@@ -23,13 +23,14 @@ export class Renderer {
     this.height = height;
   }
 
-  draw(fighters: [Fighter, Fighter], fireballs: Fireball[], groundY: number, winner: number | null): void {
+  draw(fighters: [Fighter, Fighter], fireballs: Fireball[], groundY: number, winner: number | null, roomId?: string | null): void {
     this.drawBackground(groundY);
     fireballs.forEach(fb => this.drawFireball(fb));
     fighters.forEach((f, i) => this.drawFighter(f, i + 1));
     this.drawHealthBar(fighters[0], 20, 20, 1);
     this.drawHealthBar(fighters[1], this.width - 220, 20, 2);
     this.drawControls();
+    if (roomId) this.drawRoomCode(roomId);
     if (winner !== null) this.drawWinScreen(winner);
   }
 
@@ -214,4 +215,19 @@ export class Renderer {
     ctx.font = '24px monospace';
     ctx.fillText('Presioná R para reiniciar', this.width / 2, this.height / 2 + 40);
   }
+
+  private drawRoomCode(roomId: string): void {
+    const { ctx } = this;
+    const cx = this.width / 2;
+    const y = 18;
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    const text = `🎮 SALA: ${roomId}`;
+    const metrics = ctx.measureText(text);
+    ctx.fillRect(cx - metrics.width / 2 - 10, y - 14, metrics.width + 20, 22);
+    ctx.fillStyle = '#fafc30';
+    ctx.fillText(text, cx, y);
+  }
 }
+

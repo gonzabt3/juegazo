@@ -2,7 +2,9 @@ import { Fighter } from './fighter';
 import { Fireball } from './fireball';
 import { Renderer } from './renderer';
 import { InputHandler } from './input/inputHandler';
+import { io, type Socket } from 'socket.io-client';
 import type { Controls } from './types';
+import type { FighterCommand } from './input/commands';
 
 const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 500;
@@ -19,8 +21,16 @@ export class Game {
   private fireballs: Fireball[] = [];
   private pressedKeys = new Set<string>();
   private winner: number | null = null;
+  private remoteCommands: [FighterCommand[], FighterCommand[]] = [[], []];
+  private socket: Socket | null = null;
+  private roomId: string | null = null;
+
+  private static readonly USE_KEYBOARD = import.meta.env.VITE_CONNECTION_MODE !== 'local' && import.meta.env.DEV;
 
   constructor(canvas: HTMLCanvasElement) {
+    console.log('[Game] USE_KEYBOARD:', Game.USE_KEYBOARD);
+    console.log('[Game] VITE_CONNECTION_MODE:', import.meta.env.VITE_CONNECTION_MODE);
+    console.log('[Game] DEV:', import.meta.env.DEV);
     this.canvas = canvas;
     this.canvas.width = CANVAS_WIDTH;
     this.canvas.height = CANVAS_HEIGHT;
@@ -45,6 +55,7 @@ export class Game {
   }
 
   private bindInput(): void {
+    if (!Game.USE_KEYBOARD) return;
     window.addEventListener('keydown', (e) => {
       this.pressedKeys.add(e.key);
       if (e.key === 'r' || e.key === 'R') this.reset();
@@ -59,8 +70,12 @@ export class Game {
     if (this.winner !== null) return;
 
     const [p1, p2] = this.fighters;
-    const cmds1 = this.inputHandler.getCommands(this.pressedKeys, CONTROLS_P1);
-    const cmds2 = this.inputHandler.getCommands(this.pressedKeys, CONTROLS_P2);
+    const cmds1 = Game.USE_KEYBOARD
+      ? this.inputHandler.getCommands(this.pressedKeys, CONTROLS_P1)
+      : this.remoteCommands[0];
+    const cmds2 = Game.USE_KEYBOARD
+      ? this.inputHandler.getCommands(this.pressedKeys, CONTROLS_P2)
+      : this.remoteCommands[1];
     p1.applyCommands(cmds1, p2);
     p2.applyCommands(cmds2, p1);
 
@@ -88,6 +103,9 @@ export class Game {
         if (dist < fb.radius + Math.min(width, height) / 2) {
           fighter.takeDamage(fb.damage);
           fb.active = false;
+          if (this.socket && this.roomId) {
+            this.socket.emit('player_hit', { playerIndex: idx });
+          }
         }
       });
     }
@@ -100,10 +118,48 @@ export class Game {
     else if (p2.isDead) this.winner = 0;
   }
 
+  connectToServer(): void {
+    const url = import.meta.env.VITE_SERVER_URL as string;
+    console.log('[Game] connectToServer → url:', url);
+    this.socket = io(url);
+
+    this.socket.on('connect', () => {
+      console.log('[Socket] conectado, id:', this.socket?.id);
+      this.socket!.emit('create_room');
+    });
+
+    this.socket.on('connect_error', (err) => {
+      console.error('[Socket] error de conexión:', err.message);
+    });
+
+    this.socket.on('room_created', ({ roomId }: { roomId: string }) => {
+      this.roomId = roomId;
+      console.log('[Socket] sala creada:', roomId);
+    });
+
+    this.socket.on('commands', (data: { playerIndex: 0 | 1; commands: FighterCommand[] }) => {
+      console.log(`[Socket] commands P${data.playerIndex + 1}:`, data.commands);
+      this.remoteCommands[data.playerIndex] = data.commands;
+    });
+
+    this.socket.on('player_connected', ({ playerIndex }: { playerIndex: 0 | 1 }) => {
+      console.log(`[Socket] P${playerIndex + 1} conectado`);
+    });
+
+    this.socket.on('player_disconnected', ({ playerIndex }: { playerIndex: 0 | 1 }) => {
+      this.remoteCommands[playerIndex] = [];
+      console.log(`[Socket] P${playerIndex + 1} desconectado`);
+    });
+  }
+
+  receiveCommands(playerIndex: 0 | 1, commands: FighterCommand[]): void {
+    this.remoteCommands[playerIndex] = commands;
+  }
+
   start(): void {
     const loop = (): void => {
       this.update();
-      this.renderer.draw(this.fighters, this.fireballs, GROUND_Y, this.winner);
+      this.renderer.draw(this.fighters, this.fireballs, GROUND_Y, this.winner, this.roomId);
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
