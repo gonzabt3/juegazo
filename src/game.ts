@@ -24,6 +24,9 @@ export class Game {
   private remoteCommands: [FighterCommand[], FighterCommand[]] = [[], []];
   private socket: Socket | null = null;
   private roomId: string | null = null;
+  private peers: [RTCPeerConnection | null, RTCPeerConnection | null] = [null, null];
+
+  private static readonly STUN = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
   private static readonly USE_KEYBOARD = import.meta.env.VITE_CONNECTION_MODE !== 'local' && import.meta.env.DEV;
 
@@ -143,7 +146,44 @@ export class Game {
     });
 
     this.socket.on('commands', (data: { playerIndex: 0 | 1; commands: FighterCommand[] }) => {
-      this.remoteCommands[data.playerIndex] = data.commands;
+      // Solo aplica si no hay DataChannel activo para ese player (fallback)
+      if (!this.peers[data.playerIndex]) {
+        this.remoteCommands[data.playerIndex] = data.commands;
+      }
+    });
+
+    // ── WebRTC signaling ──────────────────────────────────────────────────────
+    this.socket.on('rtc_offer', ({ playerIndex, sdp }: { playerIndex: 0 | 1; sdp: RTCSessionDescriptionInit }) => {
+      const pc = new RTCPeerConnection(Game.STUN);
+      this.peers[playerIndex] = pc;
+
+      pc.ondatachannel = (e) => {
+        const dc = e.channel;
+        dc.onmessage = (msg) => {
+          try {
+            this.remoteCommands[playerIndex] = JSON.parse(msg.data as string) as FighterCommand[];
+          } catch { /* ignorar */ }
+        };
+        dc.onclose = () => { this.peers[playerIndex] = null; };
+      };
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          this.socket!.emit('rtc_ice', { playerIndex, candidate: e.candidate.toJSON(), fromDisplay: true });
+        }
+      };
+
+      pc.setRemoteDescription(new RTCSessionDescription(sdp))
+        .then(() => pc.createAnswer())
+        .then(answer => {
+          pc.setLocalDescription(answer);
+          this.socket!.emit('rtc_answer', { playerIndex, sdp: answer });
+        })
+        .catch(() => { this.peers[playerIndex] = null; });
+    });
+
+    this.socket.on('rtc_ice', ({ playerIndex, candidate }: { playerIndex: 0 | 1; candidate: RTCIceCandidateInit }) => {
+      this.peers[playerIndex]?.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => { /* ignorar */ });
     });
 
     this.socket.on('player_connected', ({ playerIndex }: { playerIndex: 0 | 1 }) => {

@@ -57,6 +57,34 @@ io.on('connection', (socket) => {
     io.to(roomId).volatile.emit('commands', { playerIndex, commands });
   });
 
+  // ── WebRTC signaling relay ─────────────────────────────────────────────────
+  socket.on('rtc_offer', (data: { playerIndex: PlayerIndex; sdp: unknown }) => {
+    const { roomId } = socket.data as { roomId: string };
+    const room = rooms.get(roomId);
+    if (!room?.displayId) return;
+    io.to(room.displayId).emit('rtc_offer', data);
+  });
+
+  socket.on('rtc_answer', (data: { playerIndex: PlayerIndex; sdp: unknown }) => {
+    const { roomId } = socket.data as { roomId: string };
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const controllerId = room.controllers.get(data.playerIndex);
+    if (controllerId) io.to(controllerId).emit('rtc_answer', data);
+  });
+
+  socket.on('rtc_ice', (data: { playerIndex: PlayerIndex; candidate: unknown; fromDisplay?: boolean }) => {
+    const { roomId } = socket.data as { roomId: string };
+    const room = rooms.get(roomId);
+    if (!room) return;
+    if (data.fromDisplay) {
+      const controllerId = room.controllers.get(data.playerIndex);
+      if (controllerId) io.to(controllerId).emit('rtc_ice', data);
+    } else {
+      if (room.displayId) io.to(room.displayId).emit('rtc_ice', data);
+    }
+  });
+
   socket.on('player_hit', (data: { playerIndex: PlayerIndex }) => {
     const { roomId } = socket.data as { roomId: string };
     if (!roomId) return;

@@ -6,6 +6,9 @@ type PlayerIndex = 0 | 1;
 // ─── State ───────────────────────────────────────────────────────────────────
 const pressed = new Set<FighterCommand>();
 let connected = false;
+let dataChannel: RTCDataChannel | null = null;
+
+const STUN = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 // ─── Socket ───────────────────────────────────────────────────────────────────
 const SERVER_URL = import.meta.env.VITE_SERVER_URL as string;
@@ -18,10 +21,10 @@ let lastSentAt = 0;
 const KEEPALIVE_MS = 120;
 
 socket.on('joined', ({ playerIndex: pi }: { playerIndex: PlayerIndex }) => {
-  console.log('[Controller] joined as', pi + 1);
   setStatus(`Conectado como P${pi + 1} ✔`);
   showController();
   connected = true;
+  setupWebRTC(pi);
   scheduleEmit();
 });
 
@@ -104,6 +107,33 @@ for (const [id, cmd] of Object.entries(buttonMap)) {
 
 }
 
+// ─── WebRTC setup ─────────────────────────────────────────────────────────────
+function setupWebRTC(playerIndex: PlayerIndex): void {
+  const pc = new RTCPeerConnection(STUN);
+
+  // DataChannel: unordered + sin retransmisiones = latencia mínima (tipo UDP)
+  const dc = pc.createDataChannel('commands', { ordered: false, maxRetransmits: 0 });
+  dc.onopen    = () => { dataChannel = dc; };
+  dc.onclose   = () => { dataChannel = null; };
+  dc.onerror   = () => { dataChannel = null; };
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) socket.emit('rtc_ice', { playerIndex, candidate: e.candidate.toJSON() });
+  };
+
+  socket.on('rtc_answer', ({ sdp }: { sdp: RTCSessionDescriptionInit }) => {
+    pc.setRemoteDescription(new RTCSessionDescription(sdp));
+  });
+
+  socket.on('rtc_ice', ({ candidate }: { candidate: RTCIceCandidateInit }) => {
+    pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {/* ignorar */});
+  });
+
+  pc.createOffer()
+    .then(offer => { pc.setLocalDescription(offer); socket.emit('rtc_offer', { playerIndex, sdp: offer }); })
+    .catch(() => {/* fallback a socket */});
+}
+
 // ─── Emit loop (60fps) ────────────────────────────────────────────────────────
 function scheduleEmit(): void {
   function loop(): void {
@@ -114,7 +144,12 @@ function scheduleEmit(): void {
       const shouldSend = key !== lastSentKey || now - lastSentAt >= KEEPALIVE_MS;
 
       if (shouldSend) {
-        socket.volatile.emit('commands', commands);
+        const payload = JSON.stringify(commands);
+        if (dataChannel?.readyState === 'open') {
+          dataChannel.send(payload);           // directo P2P, sin pasar por Render
+        } else {
+          socket.volatile.emit('commands', commands); // fallback a socket
+        }
         lastSentKey = key;
         lastSentAt = now;
       }
