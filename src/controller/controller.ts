@@ -9,8 +9,13 @@ let connected = false;
 
 // ─── Socket ───────────────────────────────────────────────────────────────────
 const SERVER_URL = import.meta.env.VITE_SERVER_URL as string;
-const socket = io(SERVER_URL, { autoConnect: false });
-let lastEmitLogAt = 0;
+const socket = io(SERVER_URL, {
+  autoConnect: false,
+  transports: ['websocket'],
+});
+let lastSentKey = '';
+let lastSentAt = 0;
+const KEEPALIVE_MS = 120;
 
 socket.on('joined', ({ playerIndex: pi }: { playerIndex: PlayerIndex }) => {
   console.log('[Controller] joined as', pi + 1);
@@ -47,7 +52,6 @@ btnP2.addEventListener('click', () => { selectedPlayer = 1; btnP2.classList.add(
 btnJoin.addEventListener('click', () => {
   const roomId = roomInput.value.trim().toUpperCase();
   if (!roomId) { setStatus('Ingresá un código de sala'); return; }
-  console.log('[Controller] join_room', { roomId, selectedPlayer });
   setStatus('Conectando...');
   socket.connect();
   socket.emit('join_room', { roomId, playerIndex: selectedPlayer });
@@ -75,17 +79,11 @@ for (const [id, cmd] of Object.entries(buttonMap)) {
   const el = document.getElementById(id)!;
 
   const press = (): void => {
-    if (!pressed.has(cmd)) {
-      console.log('[Controller] press', cmd);
-    }
     pressed.add(cmd);
     el.classList.add('pressed');
   };
 
   const release = (): void => {
-    if (pressed.has(cmd)) {
-      console.log('[Controller] release', cmd);
-    }
     pressed.delete(cmd);
     el.classList.remove('pressed');
   };
@@ -110,11 +108,15 @@ for (const [id, cmd] of Object.entries(buttonMap)) {
 function scheduleEmit(): void {
   function loop(): void {
     if (connected) {
-      socket.emit('commands', [...pressed]);
-      const now = Date.now();
-      if (now - lastEmitLogAt > 1000) {
-        console.log('[Controller] emit commands', [...pressed]);
-        lastEmitLogAt = now;
+      const commands = [...pressed].sort();
+      const key = commands.join('|');
+      const now = performance.now();
+      const shouldSend = key !== lastSentKey || now - lastSentAt >= KEEPALIVE_MS;
+
+      if (shouldSend) {
+        socket.volatile.emit('commands', commands);
+        lastSentKey = key;
+        lastSentAt = now;
       }
     }
     requestAnimationFrame(loop);

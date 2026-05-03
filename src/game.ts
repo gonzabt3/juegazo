@@ -121,7 +121,12 @@ export class Game {
   connectToServer(): void {
     const url = import.meta.env.VITE_SERVER_URL as string;
     console.log('[Game] connectToServer → url:', url);
-    this.socket = io(url);
+    this.socket = io(url, {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 250,
+      reconnectionDelayMax: 1000,
+    });
 
     this.socket.on('connect', () => {
       console.log('[Socket] conectado, id:', this.socket?.id);
@@ -138,7 +143,6 @@ export class Game {
     });
 
     this.socket.on('commands', (data: { playerIndex: 0 | 1; commands: FighterCommand[] }) => {
-      console.log(`[Socket] commands P${data.playerIndex + 1}:`, data.commands);
       this.remoteCommands[data.playerIndex] = data.commands;
     });
 

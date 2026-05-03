@@ -17,7 +17,6 @@ interface Room {
 }
 
 const rooms = new Map<string, Room>();
-const lastCmdLogAt = new Map<string, number>();
 
 function makeRoomId(): string {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -55,14 +54,7 @@ io.on('connection', (socket) => {
   socket.on('commands', (commands: FighterCommand[]) => {
     const { roomId, playerIndex } = socket.data as { roomId: string; playerIndex: PlayerIndex };
     if (!roomId) return;
-    const key = `${roomId}:${playerIndex}`;
-    const now = Date.now();
-    const last = lastCmdLogAt.get(key) ?? 0;
-    if (now - last > 1000) {
-      console.log(`[commands] room=${roomId} p=${playerIndex + 1}`, commands);
-      lastCmdLogAt.set(key, now);
-    }
-    io.to(roomId).emit('commands', { playerIndex, commands });
+    io.to(roomId).volatile.emit('commands', { playerIndex, commands });
   });
 
   socket.on('player_hit', (data: { playerIndex: PlayerIndex }) => {
