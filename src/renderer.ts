@@ -1,6 +1,9 @@
 import { Fighter } from './fighter';
 import type { FighterState } from './fighter';
 import { Fireball } from './fireball';
+import { SpriteSheetAnimator } from './animation/spriteSheetAnimator';
+import { FighterSpriteRenderer } from './animation/fighterSpriteRenderer';
+import { FIGHTER_SPRITE_CONFIG } from './animation/fighterSpriteManifest';
 
 const STATE_TINT: Record<FighterState, string | null> = {
   IDLE:      null,
@@ -16,6 +19,9 @@ export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly width: number;
   private readonly height: number;
+  private readonly spriteAnimator = new SpriteSheetAnimator();
+  private readonly spriteRenderer = new FighterSpriteRenderer(FIGHTER_SPRITE_CONFIG, this.spriteAnimator);
+  private lastFrameAtMs = performance.now();
 
   constructor(ctx: CanvasRenderingContext2D, width: number, height: number) {
     this.ctx = ctx;
@@ -24,9 +30,21 @@ export class Renderer {
   }
 
   draw(fighters: [Fighter, Fighter], fireballs: Fireball[], groundY: number, winner: number | null, roomId?: string | null): void {
+    const now = performance.now();
+    const deltaMs = now - this.lastFrameAtMs;
+    this.lastFrameAtMs = now;
+
     this.drawBackground(groundY);
     fireballs.forEach(fb => this.drawFireball(fb));
-    fighters.forEach((f, i) => this.drawFighter(f, i + 1));
+    fighters.forEach((f, i) => {
+      const playerNum = i + 1;
+      const didDrawSprite = this.spriteRenderer.draw(this.ctx, f, playerNum, deltaMs);
+      if (!didDrawSprite) {
+        this.drawFighterFallback(f, playerNum);
+      } else {
+        this.drawFighterStateLabel(f, playerNum);
+      }
+    });
     this.drawHealthBar(fighters[0], 20, 20, 1);
     this.drawHealthBar(fighters[1], this.width - 220, 20, 2);
     this.drawControls();
@@ -73,7 +91,7 @@ export class Renderer {
     ctx.fillRect(0, groundY + 78, this.width, 4);
   }
 
-  private drawFighter(fighter: Fighter, playerNum: number): void {
+  private drawFighterFallback(fighter: Fighter, playerNum: number): void {
     const { ctx } = this;
     const { pos, width, height, color, isAttacking, facingRight, isDead, attackRange } = fighter;
 
@@ -166,6 +184,23 @@ export class Renderer {
       ctx.stroke();
     }
 
+    ctx.restore();
+  }
+
+  private drawFighterStateLabel(fighter: Fighter, playerNum: number): void {
+    const { ctx } = this;
+    const labelX = fighter.pos.x + fighter.width / 2;
+    const labelY = fighter.pos.y - 38;
+
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`P${playerNum}`, labelX, labelY);
+
+    ctx.font = '10px monospace';
+    ctx.fillStyle = fighter.state === 'BLOCKING' ? '#50b4ff' : 'rgba(255,255,255,0.6)';
+    ctx.fillText(fighter.state, labelX, labelY - 14);
     ctx.restore();
   }
 

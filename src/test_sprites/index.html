@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Sprites - Debug Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #fff;
+      font-size: 28px;
+    }
+
+    .layout {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .controls {
+      position: sticky;
+      top: 20px;
+      background: rgba(18, 18, 18, 0.95);
+      border: 1px solid #3a3a3a;
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .controls h2 {
+      font-size: 16px;
+      color: #8ac7ff;
+      margin-bottom: 12px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control label {
+      font-size: 11px;
+      color: #b9b9b9;
+    }
+
+    .control small {
+      font-size: 10px;
+      color: #8e8e8e;
+      line-height: 1.25;
+      min-height: 24px;
+    }
+
+    .control input {
+      width: 100%;
+      border: 1px solid #555;
+      background: #111;
+      color: #eee;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 12px;
+    }
+
+    .control input:focus {
+      outline: none;
+      border-color: #4a9eff;
+      box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.25);
+    }
+
+    .controls-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid #4a9eff;
+      background: rgba(74, 158, 255, 0.18);
+      color: #d4ebff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      border-color: #666;
+      background: rgba(255, 255, 255, 0.06);
+      color: #ddd;
+    }
+
+    .hint {
+      margin-top: 8px;
+      color: #8b8b8b;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .stats {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      font-size: 12px;
+      z-index: 1000;
+      max-width: 250px;
+    }
+
+    .stats-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #4a9eff;
+    }
+
+    .stats-item {
+      margin: 4px 0;
+      color: #aaa;
+    }
+
+    .states-container {
+      min-width: 0;
+    }
+
+    .sheet-panel {
+      margin-bottom: 18px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid #3f3f3f;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .sheet-panel-title {
+      font-size: 13px;
+      color: #9ed3ff;
+      margin-bottom: 8px;
+    }
+
+    .sheet-canvas-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid #2e2e2e;
+      border-radius: 6px;
+      background: #0f0f0f;
+      padding: 8px;
+    }
+
+    .sheet-canvas {
+      max-width: none;
+      image-rendering: pixelated;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .sheet-help {
+      margin-top: 8px;
+      color: #9b9b9b;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .state-section {
+      margin-bottom: 50px;
+      background: rgba(30, 30, 30, 0.8);
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .state-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #4a9eff;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #444;
+    }
+
+    .state-info {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 15px;
+    }
+
+    .frames-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+    }
+
+    .frame-item {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .frame-item:hover {
+      border-color: #4a9eff;
+      background: rgba(74, 158, 255, 0.1);
+    }
+
+    .frame-canvas {
+      width: 100%;
+      height: auto;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid #444;
+      border-radius: 2px;
+      margin-bottom: 8px;
+      image-rendering: pixelated;
+    }
+
+    .frame-label {
+      font-size: 11px;
+      color: #aaa;
+      word-break: break-word;
+    }
+
+    .frame-coords {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+      font-family: 'Courier New', monospace;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        position: static;
+      }
+
+      .stats {
+        position: static;
+        margin: 0 auto 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stats" id="stats">
+    <div class="stats-title">Spritesheet Info</div>
+    <div class="stats-item" id="sheet-size">Size: -</div>
+    <div class="stats-item" id="sheet-config">Config: -</div>
+    <div class="stats-item" id="sheet-grid">Grid: -</div>
+  </div>
+
+  <h1>🎮 Sprite Debug Viewer</h1>
+
+  <div class="layout">
+    <aside class="controls">
+      <h2>Cut Parameters</h2>
+      <div class="controls-grid">
+        <div class="control"><label for="sourceOriginX">sourceOriginX</label><input id="sourceOriginX" type="number" step="1" /><small>Inicio horizontal del primer frame en el PNG.</small></div>
+        <div class="control"><label for="sourceOriginY">sourceOriginY</label><input id="sourceOriginY" type="number" step="1" /><small>Inicio vertical del primer frame en el PNG.</small></div>
+        <div class="control"><label for="sourceFrameWidth">sourceFrameWidth</label><input id="sourceFrameWidth" type="number" step="1" min="1" /><small>Ancho del recorte de cada frame fuente.</small></div>
+        <div class="control"><label for="sourceFrameHeight">sourceFrameHeight</label><input id="sourceFrameHeight" type="number" step="1" min="1" /><small>Alto del recorte de cada frame fuente.</small></div>
+        <div class="control"><label for="sourceStrideX">sourceStrideX</label><input id="sourceStrideX" type="number" step="1" min="1" /><small>Salto horizontal entre frames consecutivos.</small></div>
+        <div class="control"><label for="sourceStrideY">sourceStrideY</label><input id="sourceStrideY" type="number" step="1" min="1" /><small>Salto vertical entre filas de animacion.</small></div>
+        <div class="control"><label for="renderWidth">renderWidth</label><input id="renderWidth" type="number" step="1" min="1" /><small>Ancho final dibujado en el canvas.</small></div>
+        <div class="control"><label for="renderHeight">renderHeight</label><input id="renderHeight" type="number" step="1" min="1" /><small>Alto final dibujado en el canvas.</small></div>
+        <div class="control"><label for="anchorX">anchor.x</label><input id="anchorX" type="number" step="1" /><small>Punto de apoyo horizontal del personaje.</small></div>
+        <div class="control"><label for="anchorY">anchor.y</label><input id="anchorY" type="number" step="1" /><small>Punto de apoyo vertical (pies/base).</small></div>
+      </div>
+      <div class="controls-actions">
+        <button class="btn" id="applyBtn" type="button">Apply</button>
+        <button class="btn" id="autoDetectBtn" type="button">Auto Detect</button>
+        <button class="btn secondary" id="copyConfigBtn" type="button">Copy Config</button>
+        <button class="btn secondary" id="resetBtn" type="button">Reset</button>
+      </div>
+      <p class="hint">
+        Tip: cambiá los valores y presioná Apply para ver todos los estados con el nuevo corte.
+        Enter dentro de un input también aplica.
+      </p>
+      <p class="hint" id="detectStatus"></p>
+    </aside>
+
+    <div class="states-container" id="container">
+      <section class="sheet-panel">
+        <div class="sheet-panel-title">Spritesheet + Grid Overlay</div>
+        <div class="sheet-canvas-wrap">
+          <canvas id="sheetCanvas" class="sheet-canvas"></canvas>
+        </div>
+        <p class="sheet-help">
+          Click sobre el PNG para mover origin (sourceOriginX/sourceOriginY). La grilla usa frame + stride + columns/rows actuales.
+        </p>
+      </section>
+
+      <div id="framesContainer">
+        <!-- Populated by main.ts -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

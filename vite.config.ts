@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         controller: resolve(__dirname, 'src/controller/index.html'),
+        test_sprites: resolve(__dirname, 'src/test_sprites/index.html'),
       },
     },
   },
