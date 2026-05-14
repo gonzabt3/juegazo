@@ -1,13 +1,13 @@
 import type { Vec2, Controls } from './types';
 import type { FighterCommand } from './input/commands';
 import { Fireball } from './fireball';
+import { WORLD_WIDTH } from './world';
 
-const GRAVITY = 0.6;
-const MOVE_SPEED = 4;
-const JUMP_FORCE = -14;
-const ATTACK_RANGE = 70;
+const GRAVITY = 0.85;
+const MOVE_SPEED = 5.2;
+const JUMP_FORCE = -18.5;
+const ATTACK_RANGE = 95;
 const ATTACK_DAMAGE = 8;
-const CANVAS_WIDTH = 900;
 
 export type FighterState = 'IDLE' | 'MOVING' | 'JUMPING' | 'ATTACKING' | 'KICKING' | 'BLOCKING' | 'HIT';
 
@@ -38,8 +38,8 @@ export interface IFighter {
 export class Fighter implements IFighter {
   pos: Vec2;
   vel: Vec2;
-  readonly width = 50;
-  readonly height = 80;
+  readonly width = 68;
+  readonly height = 108;
   health: number;
   readonly maxHealth = 100;
   readonly color: string;
@@ -65,7 +65,7 @@ export class Fighter implements IFighter {
   private readonly kickDuration = 18;
   private readonly kickCooldown = 35;
   private kickCooldownTimer = 0;
-  private readonly kickRange = 55;
+  private readonly kickRange = 74;
   private readonly kickDamage = 14;
   constructor(x: number, color: string, facingRight: boolean, controls: Controls, label: string) {
     this.pos = { x, y: 0 };
@@ -154,7 +154,7 @@ export class Fighter implements IFighter {
       this.isOnGround = true;
     }
 
-    this.pos.x = Math.max(0, Math.min(CANVAS_WIDTH - this.width, this.pos.x));
+    this.pos.x = Math.max(0, Math.min(WORLD_WIDTH - this.width, this.pos.x));
     this.state = this.resolveState();
   }
 

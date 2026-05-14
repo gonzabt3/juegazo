@@ -5,10 +5,10 @@ import { InputHandler } from './input/inputHandler';
 import { io, type Socket } from 'socket.io-client';
 import type { Controls } from './types';
 import type { FighterCommand } from './input/commands';
+import { WORLD_HEIGHT, WORLD_WIDTH, GROUND_Y } from './world';
 
-const CANVAS_WIDTH = 900;
-const CANVAS_HEIGHT = 500;
-const GROUND_Y = CANVAS_HEIGHT - 80;
+const CANVAS_WIDTH = WORLD_WIDTH;
+const CANVAS_HEIGHT = WORLD_HEIGHT;
 
 const CONTROLS_P1: Controls = { left: 'a', right: 'd', jump: 'w', attack: 'f', block: 's', fireball: 'g', kick: 'h' };
 const CONTROLS_P2: Controls = { left: 'ArrowLeft', right: 'ArrowRight', jump: 'ArrowUp', attack: 'l', block: 'ArrowDown', fireball: 'k', kick: 'j' };
@@ -48,8 +48,8 @@ export class Game {
 
   private reset(): void {
     this.fighters = [
-      new Fighter(150, '#4af', true, CONTROLS_P1, 'P1'),
-      new Fighter(CANVAS_WIDTH - 200, '#f64', false, CONTROLS_P2, 'P2'),
+      new Fighter(180, '#4af', true, CONTROLS_P1, 'P1'),
+      new Fighter(CANVAS_WIDTH - 260, '#f64', false, CONTROLS_P2, 'P2'),
     ];
     this.fighters[0].pos.y = GROUND_Y;
     this.fighters[1].pos.y = GROUND_Y;

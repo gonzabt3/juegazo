@@ -34,7 +34,8 @@ export class Renderer {
     const deltaMs = now - this.lastFrameAtMs;
     this.lastFrameAtMs = now;
 
-    this.drawBackground(groundY);
+    const groundLineY = groundY + fighters[0].height;
+    this.drawBackground(groundLineY);
     fireballs.forEach(fb => this.drawFireball(fb));
     fighters.forEach((f, i) => {
       const playerNum = i + 1;
@@ -81,14 +82,14 @@ export class Renderer {
     ctx.restore();
   }
 
-  private drawBackground(groundY: number): void {
+  private drawBackground(groundLineY: number): void {
     const { ctx } = this;
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, this.width, this.height);
     ctx.fillStyle = '#444';
-    ctx.fillRect(0, groundY + 80, this.width, this.height - groundY - 80);
+    ctx.fillRect(0, groundLineY, this.width, this.height - groundLineY);
     ctx.fillStyle = '#666';
-    ctx.fillRect(0, groundY + 78, this.width, 4);
+    ctx.fillRect(0, groundLineY - 2, this.width, 4);
   }
 
   private drawFighterFallback(fighter: Fighter, playerNum: number): void {

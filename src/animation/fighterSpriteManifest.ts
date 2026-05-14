@@ -5,19 +5,19 @@ const defaultUrl = new URL('../../tes_character.png', import.meta.url).href;
 
 export const FIGHTER_SPRITE_CONFIG: SpriteSheetConfig = {
   imageUrl: configuredUrl || defaultUrl,
-  // This sheet has margins and larger cells than the in-game render size.
-  sourceFrameWidth: 135,
-  sourceFrameHeight: 150,
-  sourceOriginX: 1,
-  sourceOriginY: 1,
-  sourceStrideX: 130,
+  // Contract for AI-generated sheet: 8x7 grid, 128x128 cells, no margins.
+  sourceFrameWidth: 128,
+  sourceFrameHeight: 128,
+  sourceOriginX: 0,
+  sourceOriginY: 0,
+  sourceStrideX: 128,
   sourceStrideY: 128,
-  renderWidth: 96,
-  renderHeight: 96,
+  renderWidth: 128,
+  renderHeight: 128,
   columns: 8,
   rows: 7,
-  // "Pies al centro" en la base del frame para alinear con ground/hitbox del Fighter.
-  anchor: { x: 48, y: 94 },
+  // Foot anchor near the lower center of each 128x128 cell.
+  anchor: { x: 64, y: 122 },
   clips: {
     IDLE: { row: 0, frameCount: 6, fps: 8, loop: true },
     MOVING: { row: 1, frameCount: 8, fps: 12, loop: true },
